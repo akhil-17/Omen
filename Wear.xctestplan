@@ -1,0 +1,37 @@
+{
+  "configurations" : [
+    {
+      "id" : "AEBA177F-27E1-4256-9737-2CB299C9DC43",
+      "name" : "Test Scheme Action",
+      "options" : {
+
+      }
+    }
+  ],
+  "defaultOptions" : {
+    "targetForVariableExpansion" : {
+      "containerPath" : "container:Wear.xcodeproj",
+      "identifier" : "078A393E2D7ECA96001315AC",
+      "name" : "Wear"
+    }
+  },
+  "testTargets" : [
+    {
+      "parallelizable" : true,
+      "target" : {
+        "containerPath" : "container:Wear.xcodeproj",
+        "identifier" : "078A394F2D7ECA98001315AC",
+        "name" : "WearTests"
+      }
+    },
+    {
+      "parallelizable" : true,
+      "target" : {
+        "containerPath" : "container:Wear.xcodeproj",
+        "identifier" : "078A39592D7ECA98001315AC",
+        "name" : "WearUITests"
+      }
+    }
+  ],
+  "version" : 1
+}

@@ -9,6 +9,10 @@
     }
   ],
   "defaultOptions" : {
+    "locationScenario" : {
+      "identifier" : "San Francisco, CA, USA",
+      "referenceType" : "built-in"
+    },
     "targetForVariableExpansion" : {
       "containerPath" : "container:Wear.xcodeproj",
       "identifier" : "078A393E2D7ECA96001315AC",

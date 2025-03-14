@@ -19,42 +19,50 @@ struct WeatherDetailsOverlay: View {
     var body: some View {
         ZStack {
             // Background
-            Color(hex: "#191919")
+            NoiseBackground()
                 .ignoresSafeArea()
             
             // Content
-            VStack(spacing: 15) {
-                Text("\(Int(temperature))°F")
-                    .font(.custom("Optima-Bold", size: 40))
-                    .foregroundColor(Color(hex: "#d4d4d4"))
+            VStack(alignment: .leading, spacing: 24) {
+                HStack(spacing: 0) {
+                    Text("Feels like ")
+                        .font(.custom("Optima-Regular", size: 48))
+                    Text("\(Int(temperature))°F")
+                        .font(.custom("Optima-Bold", size: 48))
+                }
+                .foregroundColor(Color(hex: "#d4d4d4"))
                 
-                Text(condition.rawValue)
-                    .font(.custom("Optima-Regular", size: 24))
+                if let humidity = humidity {
+                    HStack(spacing: 0) {
+                        Text("Humidity ")
+                            .font(.custom("Optima-Regular", size: 28))
+                        Text("\(humidity)%")
+                            .font(.custom("Optima-Bold", size: 28))
+                    }
                     .foregroundColor(Color(hex: "#d4d4d4"))
-                    .padding(.top, 5)
+                }
+                
+                if let windSpeed = windSpeed {
+                    HStack(spacing: 0) {
+                        Text("Wind ")
+                            .font(.custom("Optima-Regular", size: 28))
+                        Text(String(format: "%.1f mph", windSpeed))
+                            .font(.custom("Optima-Bold", size: 28))
+                    }
+                    .foregroundColor(Color(hex: "#d4d4d4"))
+                }
+                
+                if let precipitation = precipitation {
+                    HStack(spacing: 0) {
+                        Text("Rain ")
+                            .font(.custom("Optima-Regular", size: 28))
+                        Text(String(format: "%.1f mm", precipitation))
+                            .font(.custom("Optima-Bold", size: 28))
+                    }
+                    .foregroundColor(Color(hex: "#d4d4d4"))
+                }
                 
                 HStack(spacing: 20) {
-                    if let humidity = humidity {
-                        WeatherDataView(
-                            value: "\(humidity)%",
-                            label: "Humidity"
-                        )
-                    }
-                    
-                    if let windSpeed = windSpeed {
-                        WeatherDataView(
-                            value: String(format: "%.1f mph", windSpeed),
-                            label: "Wind"
-                        )
-                    }
-                    
-                    if let precipitation = precipitation {
-                        WeatherDataView(
-                            value: String(format: "%.1f mm", precipitation),
-                            label: "Rain"
-                        )
-                    }
-                    
                     if let thunderstormProb = thunderstormProbability,
                        thunderstormProb > 30 {
                         WeatherDataView(
@@ -65,6 +73,9 @@ struct WeatherDetailsOverlay: View {
                 }
             }
             .padding()
+            .frame(maxHeight: .infinity)
+            .contentShape(Rectangle())
+            .padding(.horizontal)
         }
     }
 }
@@ -171,6 +182,50 @@ extension Array {
     }
 }
 
+struct NoiseBackground: View {
+    @State private var time: Double = 0
+    let timer = Timer.publish(every: 1/60, on: .main, in: .common).autoconnect()
+    
+    var body: some View {
+        TimelineView(.animation) { timeline in
+            Canvas { context, size in
+                let center = CGPoint(x: size.width/2, y: size.height/2)
+                context.fill(
+                    Path(CGRect(origin: .zero, size: size)),
+                    with: .radialGradient(
+                        Gradient(colors: [Color(hex: "#191919"), Color(hex: "#000000")]),
+                        center: center,
+                        startRadius: 0,
+                        endRadius: max(size.width, size.height) / 1.5
+                    )
+                )
+                
+                let noiseScale: CGFloat = 25
+                let cells = Int(size.width / noiseScale) * Int(size.height / noiseScale) * 4
+                
+                for _ in 0..<cells {
+                    let x = CGFloat.random(in: 0..<size.width)
+                    let y = CGFloat.random(in: 0..<size.height)
+                    let rect = CGRect(x: x, y: y, width: 1, height: 1)
+                    
+                    // Use time to create a flickering effect
+                    let flickerSpeed = sin(time * 3 + x + y)
+                    let baseOpacity = Double.random(in: 0.08...0.25)
+                    let opacity = baseOpacity * (flickerSpeed + 1) / 2 // Normalize to 0-1 range
+                    
+                    // Only draw particles that have sufficient opacity
+                    if opacity > 0.02 {
+                        context.fill(Path(rect), with: .color(.white.opacity(opacity)))
+                    }
+                }
+            }
+        }
+        .onReceive(timer) { _ in
+            time += 1/60
+        }
+    }
+}
+
 struct ContentView: View {
     @StateObject private var weatherService = WeatherService()
     @StateObject private var locationManager = LocationManager()
@@ -178,10 +233,13 @@ struct ContentView: View {
     @State private var currentWeatherMessage: String = ""
     @State private var messageOpacity: Double = 0
     
+    // Add haptic feedback generator
+    let impactGenerator = UIImpactFeedbackGenerator(style: .medium)
+    
     var body: some View {
         ZStack {
-            // Background
-            Color(hex: "#191919")
+            // Animated noise background
+            NoiseBackground()
                 .ignoresSafeArea()
             
             // Main Content
@@ -219,18 +277,20 @@ struct ContentView: View {
                                 .easeIn(duration: 0.2),   // Faster fade in
                             value: isShowingDetails
                         )
-                        .onLongPressGesture(minimumDuration: 0.5, maximumDistance: .infinity, pressing: { isPressing in
+                        .onLongPressGesture(minimumDuration: 1.0, maximumDistance: .infinity, pressing: { isPressing in
                             withAnimation(
                                 isPressing ?
                                     .easeInOut(duration: 0.4) :     // Smooth appearance
                                     .easeInOut(duration: 0.25)       // Faster disappearance
                             ) {
                                 isShowingDetails = isPressing
+                                // Trigger haptic feedback
+                                impactGenerator.impactOccurred()
                             }
                         }, perform: { })
                 } else {
-                    Text("Loading...")
-                        .font(.system(size: 20))
+                    Image(systemName: "eye")
+                        .font(.system(size: 64))
                         .foregroundColor(Color(hex: "#d4d4d4"))
                 }
             }

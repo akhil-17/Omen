@@ -25,11 +25,11 @@ struct WeatherDetailsOverlay: View {
             // Content
             VStack(spacing: 15) {
                 Text("\(Int(temperature))°F")
-                    .font(.system(size: 40, weight: .bold))
+                    .font(.custom("Optima-Bold", size: 40))
                     .foregroundColor(Color(hex: "#d4d4d4"))
                 
                 Text(condition.rawValue)
-                    .font(.system(size: 24, weight: .medium))
+                    .font(.custom("Optima-Regular", size: 24))
                     .foregroundColor(Color(hex: "#d4d4d4"))
                     .padding(.top, 5)
                 
@@ -69,6 +69,108 @@ struct WeatherDetailsOverlay: View {
     }
 }
 
+struct AnimatedText: View {
+    let text: String
+    @State private var characterOpacities: [Double] = []
+    let onAnimationComplete: () -> Void
+    
+    var body: some View {
+        Text(text)
+            .font(.system(size: 48))
+            .foregroundColor(Color(hex: "#d4d4d4"))
+            .opacity(characterOpacities.isEmpty ? 0 : 1)
+            .onAppear {
+                animateText()
+            }
+    }
+    
+    private func animateText() {
+        let characters = Array(text)
+        characterOpacities = Array(repeating: 0, count: characters.count)
+        
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+            withAnimation(.easeIn(duration: 0.8)) {
+                characterOpacities = Array(repeating: 1, count: characters.count)
+            }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
+                onAnimationComplete()
+            }
+        }
+    }
+}
+
+struct AnimatedTextLines: View {
+    let text: String
+    @State private var lineOpacities: [Double] = []
+    @State private var debugText: String = ""
+    
+    var body: some View {
+        let lines = text.components(separatedBy: .newlines)
+        print("Number of lines: \(lines.count)")
+        print("Lines: \(lines)")
+        print("Line opacities: \(lineOpacities)")
+        
+        return VStack(alignment: .leading, spacing: 24) {
+            ForEach(Array(lines.enumerated()), id: \.offset) { index, line in
+                Text(line)
+                    .font(.custom("Optima-Regular", size: 48))
+                    .foregroundColor(Color(hex: "#d4d4d4"))
+                    .opacity(lineOpacities[safe: index] ?? 0)
+                    .onAppear {
+                        print("Line \(index) appeared: \(line)")
+                        animateLine(at: index, in: lines)
+                    }
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .onChange(of: text) { oldValue, newValue in
+            print("Text changed from: \(oldValue) to: \(newValue)")
+            startAnimation(for: newValue)
+        }
+        .onAppear {
+            print("AnimatedTextLines appeared with text: \(text)")
+            startAnimation(for: text)
+        }
+    }
+    
+    private func startAnimation(for text: String) {
+        let lines = text.components(separatedBy: .newlines)
+        print("Starting animation with \(lines.count) lines")
+        lineOpacities = Array(repeating: 0, count: lines.count)
+        
+        // Animate each line with a delay
+        for (index, _) in lines.enumerated() {
+            DispatchQueue.main.asyncAfter(deadline: .now() + Double(index) * 2.3) {
+                withAnimation(.easeIn(duration: 0.8)) {
+                    if index < lineOpacities.count {
+                        print("Animating line \(index)")
+                        lineOpacities[index] = 1
+                    }
+                }
+            }
+        }
+    }
+    
+    private func animateLine(at index: Int, in lines: [String]) {
+        print("Preparing to animate line \(index)")
+        DispatchQueue.main.asyncAfter(deadline: .now() + Double(index) * 2.3) {
+            withAnimation(.easeIn(duration: 0.8)) {
+                if index < lineOpacities.count {
+                    print("Setting opacity for line \(index) to 1")
+                    lineOpacities[index] = 1
+                }
+            }
+        }
+    }
+}
+
+// Helper extension for safe array access
+extension Array {
+    subscript(safe index: Int) -> Element? {
+        return indices.contains(index) ? self[index] : nil
+    }
+}
+
 struct ContentView: View {
     @StateObject private var weatherService = WeatherService()
     @StateObject private var locationManager = LocationManager()
@@ -105,14 +207,12 @@ struct ContentView: View {
                         .padding()
                 } else if let temperature = weatherService.currentTemperature,
                           let condition = weatherService.weatherCondition {
-                    Text(currentWeatherMessage)
-                        .font(.system(size: 24))
-                        .foregroundColor(Color(hex: "#d4d4d4"))
+                    AnimatedTextLines(text: currentWeatherMessage)
                         .multilineTextAlignment(.leading)
                         .padding()
                         .frame(maxHeight: .infinity)
                         .contentShape(Rectangle())
-                        .opacity(isShowingDetails ? 0 : messageOpacity)
+                        .opacity(isShowingDetails ? 0 : 1)
                         .animation(
                             isShowingDetails ? 
                                 .easeOut(duration: 0.3) : // Fade out
@@ -168,8 +268,10 @@ struct ContentView: View {
         }
         .onChange(of: weatherService.weatherCondition) { oldValue, newValue in
             if let condition = newValue {
+                print("Weather condition changed to: \(condition.rawValue)")
                 messageOpacity = 0 // Reset opacity
                 currentWeatherMessage = WeatherMessages.randomMessage(for: condition)
+                print("New message: \(currentWeatherMessage)")
                 withAnimation(.easeIn(duration: 0.5)) {
                     messageOpacity = 1 // Fade in the new message
                 }
@@ -185,10 +287,10 @@ struct WeatherDataView: View {
     var body: some View {
         VStack(spacing: 5) {
             Text(value)
-                .font(.system(size: 16, weight: .medium))
+                .font(.custom("Optima-Regular", size: 16))
                 .foregroundColor(Color(hex: "#d4d4d4"))
             Text(label)
-                .font(.system(size: 12))
+                .font(.custom("Optima-Regular", size: 12))
                 .foregroundColor(Color(hex: "#d4d4d4").opacity(0.7))
         }
     }

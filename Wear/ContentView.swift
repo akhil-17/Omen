@@ -114,6 +114,7 @@ struct AnimatedTextLines: View {
     let text: String
     @State private var lineOpacities: [Double] = []
     @State private var debugText: String = ""
+    var onAnimationComplete: (() -> Void)?
     
     var body: some View {
         let lines = text.components(separatedBy: .newlines)
@@ -156,6 +157,13 @@ struct AnimatedTextLines: View {
                     if index < lineOpacities.count {
                         print("Animating line \(index)")
                         lineOpacities[index] = 1
+                    }
+                }
+                
+                // If this is the last line, call the completion handler after its animation
+                if index == lines.count - 1 {
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
+                        onAnimationComplete?()
                     }
                 }
             }
@@ -226,12 +234,57 @@ struct NoiseBackground: View {
     }
 }
 
+struct LocationPermissionView: View {
+    let onRequestPermission: () -> Void
+    @State private var buttonOpacity: Double = 0
+    @State private var buttonRotation: Double = 0
+    
+    private let permissionHaiku = "Through mist and shadow\nYour presence calls to the void\nShare your location"
+    
+    var body: some View {
+        VStack {
+            AnimatedTextLines(text: permissionHaiku) {
+                withAnimation(.easeIn(duration: 0.8)) {
+                    buttonOpacity = 1
+                }
+                withAnimation(.linear(duration: 8).repeatForever(autoreverses: false)) {
+                    buttonRotation = 360
+                }
+            }
+            .multilineTextAlignment(.leading)
+            .padding()
+            .frame(maxHeight: .infinity)
+            .contentShape(Rectangle())
+            
+            Button {
+                onRequestPermission()
+            } label: {
+                Image(systemName: "location.circle.fill")
+                    .font(.system(size: 36))
+                    .foregroundColor(Color(hex: "#d4d4d4"))
+                    .rotationEffect(.degrees(buttonRotation))
+                    .frame(width: 96, height: 96)
+                    .background(Color(hex: "#191919"))
+                    .clipShape(Circle())
+                    .overlay(
+                        Circle()
+                            .stroke(Color(hex: "#d4d4d4").opacity(0.3), lineWidth: 1)
+                    )
+            }
+            .opacity(buttonOpacity)
+            .padding(.bottom)
+        }
+    }
+}
+
 struct ContentView: View {
     @StateObject private var weatherService = WeatherService()
     @StateObject private var locationManager = LocationManager()
     @State private var isShowingDetails = false
     @State private var currentWeatherMessage: String = ""
     @State private var messageOpacity: Double = 0
+    @State private var settingsButtonOpacity: Double = 0
+    @State private var gearRotation: Double = 0
     
     // Add haptic feedback generator
     let impactGenerator = UIImpactFeedbackGenerator(style: .medium)
@@ -244,19 +297,52 @@ struct ContentView: View {
             
             // Main Content
             VStack {
-                if let locationError = locationManager.error {
-                    VStack(spacing: 12) {
-                        Text(locationError.message)
-                            .font(.system(size: 16))
-                            .foregroundColor(Color(hex: "#d4d4d4"))
-                            .multilineTextAlignment(.center)
-                        
-                        Button("Open Settings") {
-                            locationManager.openSettings()
-                        }
-                        .buttonStyle(.bordered)
+                if locationManager.permissionStatus == .notDetermined {
+                    LocationPermissionView {
+                        locationManager.requestPermission()
                     }
+                } else if let locationError = locationManager.error {
+                    AnimatedTextLines(text: locationError.message) {
+                        withAnimation(.easeIn(duration: 0.8)) {
+                            settingsButtonOpacity = 1
+                        }
+                        // Start rotation animation after button appears
+                        withAnimation(.linear(duration: 8).repeatForever(autoreverses: false)) {
+                            gearRotation = 360
+                        }
+                    }
+                    .multilineTextAlignment(.leading)
                     .padding()
+                    .frame(maxHeight: .infinity)
+                    .contentShape(Rectangle())
+                    .onAppear {
+                        // Reset button opacity and rotation when error appears
+                        settingsButtonOpacity = 0
+                        gearRotation = 0
+                    }
+                    .onChange(of: locationError.message) { _, _ in
+                        // Reset button opacity and rotation when error message changes
+                        settingsButtonOpacity = 0
+                        gearRotation = 0
+                    }
+                    
+                    Button {
+                        locationManager.openSettings()
+                    } label: {
+                        Image(systemName: "gearshape.fill")
+                            .font(.system(size: 36))
+                            .foregroundColor(Color(hex: "#d4d4d4"))
+                            .rotationEffect(.degrees(gearRotation))
+                            .frame(width: 96, height: 96)
+                            .background(Color(hex: "#191919"))
+                            .clipShape(Circle())
+                            .overlay(
+                                Circle()
+                                    .stroke(Color(hex: "#d4d4d4").opacity(0.3), lineWidth: 1)
+                            )
+                    }
+                    .opacity(settingsButtonOpacity)
+                    .padding(.bottom)
                 } else if let error = weatherService.error {
                     Text(error.localizedDescription)
                         .font(.system(size: 16))

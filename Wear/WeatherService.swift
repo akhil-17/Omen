@@ -83,59 +83,27 @@ class WeatherService: ObservableObject {
             return .thunderstorm
         }
         
-        // Temperature-based conditions with humidity and wind consideration
-        let feelsLikeTemperature = calculateFeelsLikeTemperature(
-            temperature: temperature,
-            humidity: humidity,
-            windSpeed: windSpeed,
-            precipitation: precipitation
-        )
+        // Check precipitation first
+        if precipitation > 0.5 {
+            return .rainy
+        }
         
-        if feelsLikeTemperature >= 100 {
+        // Temperature-based conditions
+        if temperature >= 100 {
             return .veryHot
-        } else if feelsLikeTemperature >= 90 {
+        } else if temperature >= 90 {
             return .hot
-        } else if feelsLikeTemperature >= 80 {
+        } else if temperature >= 80 {
             return .warm
-        } else if feelsLikeTemperature >= 70 {
+        } else if temperature >= 70 {
             return .mild
-        } else if feelsLikeTemperature >= 60 {
+        } else if temperature >= 60 {
             return .cool
-        } else if feelsLikeTemperature >= 32 {
+        } else if temperature >= 32 {
             return .cold
         } else {
             return .veryCold
         }
-    }
-    
-    private func calculateFeelsLikeTemperature(temperature: Double, humidity: Int, windSpeed: Double, precipitation: Double) -> Double {
-        let humidityFactor = Double(humidity) / 100.0
-        let windFactor = windSpeed * 0.1 // Wind speed impact factor
-        let precipitationFactor = min(precipitation * 2.0, 10.0) // Precipitation impact factor, capped at 10°F
-        
-        // Calculate base temperature with humidity and wind
-        let baseTemperature: Double
-        if temperature >= 80 {
-            // Heat index calculation for warm temperatures
-            let temperatureFactor = temperature - 80.0
-            let heatIndex = temperature + (humidityFactor * temperatureFactor * 0.1)
-            baseTemperature = heatIndex - (windFactor * (temperature - 80) * 0.05)
-        } else {
-            // Wind chill calculation for cold temperatures
-            let temperatureFactor = 80.0 - temperature
-            let baseChill = temperature - (humidityFactor * temperatureFactor * 0.05)
-            baseTemperature = baseChill - (windFactor * temperatureFactor * 0.1)
-        }
-        
-        // Apply precipitation effect
-        if precipitation > 0 {
-            // Rain makes it feel colder due to evaporative cooling
-            // The effect is stronger at higher temperatures
-            let rainEffect = precipitationFactor * (1.0 + (temperature - 50) * 0.02)
-            return baseTemperature - rainEffect
-        }
-        
-        return baseTemperature
     }
     
     func fetchWeather(for location: CLLocation) async {

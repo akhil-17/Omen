@@ -89,17 +89,17 @@ class WeatherService: ObservableObject {
         }
         
         // Temperature-based conditions
-        if temperature >= 100 {
+        if temperature >= 85 {
             return .veryHot
-        } else if temperature >= 90 {
-            return .hot
-        } else if temperature >= 80 {
-            return .warm
         } else if temperature >= 70 {
-            return .mild
+            return .hot
         } else if temperature >= 60 {
+            return .warm
+        } else if temperature >= 50 {
+            return .mild
+        } else if temperature >= 40 {
             return .cool
-        } else if temperature >= 32 {
+        } else if temperature >= 30 {
             return .cold
         } else {
             return .veryCold

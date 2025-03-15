@@ -15,6 +15,9 @@ struct WeatherDetailsOverlay: View {
     let windSpeed: Double?
     let precipitation: Double?
     let thunderstormProbability: Int?
+    let location: CLLocation
+    @State private var locationName: String = ""
+    @State private var contentOpacity: Double = 0
     
     var body: some View {
         ZStack {
@@ -24,20 +27,23 @@ struct WeatherDetailsOverlay: View {
             
             // Content
             VStack(alignment: .leading, spacing: 24) {
-                HStack(spacing: 0) {
-                    Text("Feels like ")
-                        .font(.custom("Optima-Regular", size: 48))
-                    Text("\(Int(temperature))°F")
-                        .font(.custom("Optima-Bold", size: 48))
-                }
-                .foregroundColor(Color(hex: "#d4d4d4"))
+                // Location name with fixed height
+                Text(locationName)
+                    .font(.custom("Optima-Regular", size: 35))
+                    .foregroundColor(Color(hex: "#d4d4d4"))
+                    .frame(height: 42) // Increased height to match new font size
+                    .opacity(locationName.isEmpty ? 0 : 1)
+                
+                Text("\(Int(temperature))°F")
+                    .font(.custom("Optima-Bold", size: 75))
+                    .foregroundColor(Color(hex: "#d4d4d4"))
                 
                 if let humidity = humidity {
                     HStack(spacing: 0) {
                         Text("Humidity ")
-                            .font(.custom("Optima-Regular", size: 28))
+                            .font(.custom("Optima-Regular", size: 35))
                         Text("\(humidity)%")
-                            .font(.custom("Optima-Bold", size: 28))
+                            .font(.custom("Optima-Bold", size: 35))
                     }
                     .foregroundColor(Color(hex: "#d4d4d4"))
                 }
@@ -45,9 +51,9 @@ struct WeatherDetailsOverlay: View {
                 if let windSpeed = windSpeed {
                     HStack(spacing: 0) {
                         Text("Wind ")
-                            .font(.custom("Optima-Regular", size: 28))
+                            .font(.custom("Optima-Regular", size: 35))
                         Text(String(format: "%.1f mph", windSpeed))
-                            .font(.custom("Optima-Bold", size: 28))
+                            .font(.custom("Optima-Bold", size: 35))
                     }
                     .foregroundColor(Color(hex: "#d4d4d4"))
                 }
@@ -55,9 +61,9 @@ struct WeatherDetailsOverlay: View {
                 if let precipitation = precipitation {
                     HStack(spacing: 0) {
                         Text("Rain ")
-                            .font(.custom("Optima-Regular", size: 28))
+                            .font(.custom("Optima-Regular", size: 35))
                         Text(String(format: "%.1f mm", precipitation))
-                            .font(.custom("Optima-Bold", size: 28))
+                            .font(.custom("Optima-Bold", size: 35))
                     }
                     .foregroundColor(Color(hex: "#d4d4d4"))
                 }
@@ -73,9 +79,40 @@ struct WeatherDetailsOverlay: View {
                 }
             }
             .padding()
-            .frame(maxHeight: .infinity)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
             .contentShape(Rectangle())
-            .padding(.horizontal)
+            .opacity(contentOpacity)
+        }
+        .padding(.horizontal)
+        .task {
+            await getLocationName()
+            withAnimation(.easeOut(duration: 0.4)) {
+                contentOpacity = 1
+            }
+        }
+        .onDisappear {
+            contentOpacity = 0
+        }
+    }
+    
+    private func getLocationName() async {
+        let geocoder = CLGeocoder()
+        do {
+            let placemarks = try await geocoder.reverseGeocodeLocation(location)
+            if let placemark = placemarks.first {
+                if let city = placemark.locality,
+                   let state = placemark.administrativeArea,
+                   placemark.isoCountryCode == "US" {
+                    locationName = "\(city), \(state)"
+                } else if let city = placemark.locality,
+                          let country = placemark.country {
+                    locationName = "\(city), \(country)"
+                } else if let name = placemark.name {
+                    locationName = name
+                }
+            }
+        } catch {
+            print("Geocoding error: \(error.localizedDescription)")
         }
     }
 }
@@ -150,20 +187,23 @@ struct AnimatedTextLines: View {
         print("Starting animation with \(lines.count) lines")
         lineOpacities = Array(repeating: 0, count: lines.count)
         
-        // Animate each line with a delay
-        for (index, _) in lines.enumerated() {
-            DispatchQueue.main.asyncAfter(deadline: .now() + Double(index) * 2.3) {
-                withAnimation(.easeIn(duration: 0.8)) {
-                    if index < lineOpacities.count {
-                        print("Animating line \(index)")
-                        lineOpacities[index] = 1
+        // Add initial delay of 1 second before starting animations
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+            // Animate each line with a delay
+            for (index, _) in lines.enumerated() {
+                DispatchQueue.main.asyncAfter(deadline: .now() + Double(index) * 2.3) {
+                    withAnimation(.easeIn(duration: 0.8)) {
+                        if index < lineOpacities.count {
+                            print("Animating line \(index)")
+                            lineOpacities[index] = 1
+                        }
                     }
-                }
-                
-                // If this is the last line, call the completion handler after its animation
-                if index == lines.count - 1 {
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
-                        onAnimationComplete?()
+                    
+                    // If this is the last line, call the completion handler after its animation
+                    if index == lines.count - 1 {
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
+                            onAnimationComplete?()
+                        }
                     }
                 }
             }
@@ -277,6 +317,60 @@ struct LocationPermissionView: View {
     }
 }
 
+struct OmenIcon: View {
+    @State private var opacity: Double = 0
+    
+    var body: some View {
+        Image("ic_omen")
+            .renderingMode(.template)
+            .resizable()
+            .scaledToFit()
+            .frame(width: 96, height: 96)
+            .foregroundColor(Color(hex: "#d4d4d4"))
+            .opacity(opacity)
+            .onAppear {
+                withAnimation(.easeInOut(duration: 2.0).repeatForever(autoreverses: true)) {
+                    opacity = 1
+                }
+            }
+    }
+}
+
+struct SplashScreen: View {
+    @State private var opacity: Double = 0
+    @State private var scale: CGFloat = 0.8
+    let onComplete: () -> Void
+    
+    var body: some View {
+        ZStack {
+            // Use the same background as main app
+            NoiseBackground()
+                .ignoresSafeArea()
+            
+            OmenIcon()
+                .frame(width: 200, height: 200)
+                .opacity(opacity)
+                .scaleEffect(scale)
+        }
+        .onAppear {
+            withAnimation(.easeOut(duration: 0.8)) {
+                opacity = 1
+                scale = 1.0
+            }
+            
+            // Trigger completion after animation
+            DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
+                withAnimation(.easeIn(duration: 0.5)) {
+                    opacity = 0
+                }
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                    onComplete()
+                }
+            }
+        }
+    }
+}
+
 struct ContentView: View {
     @StateObject private var weatherService = WeatherService()
     @StateObject private var locationManager = LocationManager()
@@ -285,84 +379,95 @@ struct ContentView: View {
     @State private var messageOpacity: Double = 0
     @State private var settingsButtonOpacity: Double = 0
     @State private var gearRotation: Double = 0
+    @State private var showSplash = true
     
     // Add haptic feedback generator
     let impactGenerator = UIImpactFeedbackGenerator(style: .medium)
     
     var body: some View {
         ZStack {
-            // Animated noise background
+            // Background that persists across transitions
             NoiseBackground()
                 .ignoresSafeArea()
             
-            // Main Content
-            VStack {
-                if locationManager.permissionStatus == .notDetermined {
-                    LocationPermissionView {
-                        locationManager.requestPermission()
+            if showSplash {
+                SplashScreen {
+                    withAnimation {
+                        showSplash = false
                     }
-                } else if let locationError = locationManager.error {
-                    AnimatedTextLines(text: locationError.message) {
-                        withAnimation(.easeIn(duration: 0.8)) {
-                            settingsButtonOpacity = 1
+                }
+            } else {
+                // Main Content
+                VStack {
+                    if locationManager.permissionStatus == .notDetermined {
+                        LocationPermissionView {
+                            locationManager.requestPermission()
                         }
-                        // Start rotation animation after button appears
-                        withAnimation(.linear(duration: 8).repeatForever(autoreverses: false)) {
-                            gearRotation = 360
+                    } else if let locationError = locationManager.error {
+                        AnimatedTextLines(text: locationError.message) {
+                            withAnimation(.easeIn(duration: 0.8)) {
+                                settingsButtonOpacity = 1
+                            }
+                            // Start rotation animation after button appears
+                            withAnimation(.linear(duration: 8).repeatForever(autoreverses: false)) {
+                                gearRotation = 360
+                            }
                         }
-                    }
-                    .multilineTextAlignment(.leading)
-                    .padding()
-                    .frame(maxHeight: .infinity)
-                    .contentShape(Rectangle())
-                    .onAppear {
-                        // Reset button opacity and rotation when error appears
-                        settingsButtonOpacity = 0
-                        gearRotation = 0
-                    }
-                    .onChange(of: locationError.message) { _, _ in
-                        // Reset button opacity and rotation when error message changes
-                        settingsButtonOpacity = 0
-                        gearRotation = 0
-                    }
-                    
-                    Button {
-                        locationManager.openSettings()
-                    } label: {
-                        Image(systemName: "gearshape.fill")
-                            .font(.system(size: 36))
-                            .foregroundColor(Color(hex: "#d4d4d4"))
-                            .rotationEffect(.degrees(gearRotation))
-                            .frame(width: 96, height: 96)
-                            .background(Color(hex: "#191919"))
-                            .clipShape(Circle())
-                            .overlay(
-                                Circle()
-                                    .stroke(Color(hex: "#d4d4d4").opacity(0.3), lineWidth: 1)
-                            )
-                    }
-                    .opacity(settingsButtonOpacity)
-                    .padding(.bottom)
-                } else if let error = weatherService.error {
-                    Text(error.localizedDescription)
-                        .font(.system(size: 16))
-                        .foregroundColor(Color(hex: "#d4d4d4"))
-                        .multilineTextAlignment(.center)
-                        .padding()
-                } else if let temperature = weatherService.currentTemperature,
-                          let condition = weatherService.weatherCondition {
-                    AnimatedTextLines(text: currentWeatherMessage)
                         .multilineTextAlignment(.leading)
                         .padding()
                         .frame(maxHeight: .infinity)
                         .contentShape(Rectangle())
-                        .opacity(isShowingDetails ? 0 : 1)
-                        .animation(
-                            isShowingDetails ? 
-                                .easeOut(duration: 0.3) : // Fade out
-                                .easeIn(duration: 0.2),   // Faster fade in
-                            value: isShowingDetails
-                        )
+                        .onAppear {
+                            // Reset button opacity and rotation when error appears
+                            settingsButtonOpacity = 0
+                            gearRotation = 0
+                        }
+                        .onChange(of: locationError.message) { _, _ in
+                            // Reset button opacity and rotation when error message changes
+                            settingsButtonOpacity = 0
+                            gearRotation = 0
+                        }
+                        
+                        Button {
+                            locationManager.openSettings()
+                        } label: {
+                            Image(systemName: "gearshape.fill")
+                                .font(.system(size: 36))
+                                .foregroundColor(Color(hex: "#d4d4d4"))
+                                .rotationEffect(.degrees(gearRotation))
+                                .frame(width: 96, height: 96)
+                                .background(Color(hex: "#191919"))
+                                .clipShape(Circle())
+                                .overlay(
+                                    Circle()
+                                        .stroke(Color(hex: "#d4d4d4").opacity(0.3), lineWidth: 1)
+                                )
+                        }
+                        .opacity(settingsButtonOpacity)
+                        .padding(.bottom)
+                    } else if let error = weatherService.error {
+                        Text(error.localizedDescription)
+                            .font(.system(size: 16))
+                            .foregroundColor(Color(hex: "#d4d4d4"))
+                            .multilineTextAlignment(.center)
+                            .padding()
+                    } else if let temperature = weatherService.currentTemperature,
+                              let condition = weatherService.weatherCondition,
+                              let location = locationManager.location {
+                        VStack(spacing: 48) {
+                            AnimatedTextLines(text: currentWeatherMessage)
+                                .multilineTextAlignment(.leading)
+                                .padding()
+                                .frame(maxHeight: .infinity)
+                                .contentShape(Rectangle())
+                                .opacity(messageOpacity)
+                                .animation(
+                                    isShowingDetails ? 
+                                        .easeOut(duration: 0.3) : // Fade out
+                                        .easeIn(duration: 0.2),   // Faster fade in
+                                    value: messageOpacity
+                                )
+                        }
                         .onLongPressGesture(minimumDuration: 1.0, maximumDistance: .infinity, pressing: { isPressing in
                             withAnimation(
                                 isPressing ?
@@ -370,36 +475,38 @@ struct ContentView: View {
                                     .easeInOut(duration: 0.25)       // Faster disappearance
                             ) {
                                 isShowingDetails = isPressing
+                                messageOpacity = isPressing ? 0 : 1  // Fade message with overlay
                                 // Trigger haptic feedback
                                 impactGenerator.impactOccurred()
                             }
                         }, perform: { })
-                } else {
-                    Image(systemName: "eye")
-                        .font(.system(size: 64))
-                        .foregroundColor(Color(hex: "#d4d4d4"))
+                    } else {
+                        OmenIcon()
+                    }
                 }
-            }
-            .padding(.horizontal)
-            
-            // Overlay
-            if isShowingDetails,
-               let temperature = weatherService.currentTemperature,
-               let condition = weatherService.weatherCondition {
-                WeatherDetailsOverlay(
-                    temperature: temperature,
-                    condition: condition,
-                    humidity: weatherService.humidity,
-                    windSpeed: weatherService.windSpeed,
-                    precipitation: weatherService.precipitation,
-                    thunderstormProbability: weatherService.thunderstormProbability
-                )
-                .transition(
-                    .asymmetric(
-                        insertion: .opacity.combined(with: .scale(scale: 1.02)).animation(.easeOut(duration: 0.4)),
-                        removal: .opacity.combined(with: .scale(scale: 1.02)).animation(.easeIn(duration: 0.25))
+                .padding(.horizontal)
+                
+                // Overlay
+                if isShowingDetails,
+                   let temperature = weatherService.currentTemperature,
+                   let condition = weatherService.weatherCondition,
+                   let location = locationManager.location {
+                    WeatherDetailsOverlay(
+                        temperature: temperature,
+                        condition: condition,
+                        humidity: weatherService.humidity,
+                        windSpeed: weatherService.windSpeed,
+                        precipitation: weatherService.precipitation,
+                        thunderstormProbability: weatherService.thunderstormProbability,
+                        location: location
                     )
-                )
+                    .transition(
+                        .asymmetric(
+                            insertion: .opacity.combined(with: .scale(scale: 1.02)),
+                            removal: .opacity.combined(with: .scale(scale: 1.02))
+                        )
+                    )
+                }
             }
         }
         .task {
@@ -433,10 +540,10 @@ struct WeatherDataView: View {
     var body: some View {
         VStack(spacing: 5) {
             Text(value)
-                .font(.custom("Optima-Regular", size: 16))
+                .font(.custom("Optima-Regular", size: 20))
                 .foregroundColor(Color(hex: "#d4d4d4"))
             Text(label)
-                .font(.custom("Optima-Regular", size: 12))
+                .font(.custom("Optima-Regular", size: 15))
                 .foregroundColor(Color(hex: "#d4d4d4").opacity(0.7))
         }
     }

@@ -12,6 +12,7 @@ struct CurrentWeather: Codable {
     let relative_humidity_2m: Int
     let wind_speed_10m: Double
     let precipitation: Double
+    let snowfall: Double
     let thunderstorm_probability: Int?
 }
 
@@ -20,6 +21,7 @@ enum WeatherCondition: String {
     case partlyCloudy = "Partly Cloudy"
     case cloudy = "Cloudy"
     case rainy = "Rainy"
+    case snowy = "Snowy"
     case thunderstorm = "Thunderstorm"
     case stormy = "Stormy"
     case foggy = "Foggy"
@@ -30,25 +32,6 @@ enum WeatherCondition: String {
     case cool = "Cool"
     case cold = "Cold"
     case veryCold = "Very Cold"
-    
-    var icon: String {
-        switch self {
-        case .sunny: return "sun.max.fill"
-        case .partlyCloudy: return "cloud.sun.fill"
-        case .cloudy: return "cloud.fill"
-        case .rainy: return "cloud.rain.fill"
-        case .thunderstorm: return "cloud.bolt.fill"
-        case .stormy: return "cloud.bolt.rain.fill"
-        case .foggy: return "cloud.fog.fill"
-        case .veryHot: return "thermometer.high"
-        case .hot: return "thermometer.high"
-        case .warm: return "thermometer"
-        case .mild: return "thermometer"
-        case .cool: return "thermometer"
-        case .cold: return "thermometer.low"
-        case .veryCold: return "thermometer.low"
-        }
-    }
 }
 
 enum WeatherError: Error {
@@ -112,14 +95,16 @@ class WeatherService: ObservableObject {
         return mps * 2.237
     }
     
-    private func determineWeatherCondition(temperature: Double, humidity: Int, windSpeed: Double, precipitation: Double, thunderstormProbability: Int?) -> WeatherCondition {
+    private func determineWeatherCondition(temperature: Double, humidity: Int, windSpeed: Double, precipitation: Double, snowfall: Double, thunderstormProbability: Int?) -> WeatherCondition {
         // Thunderstorm conditions take precedence
         if let thunderstormProb = thunderstormProbability, thunderstormProb > 30 {
             return .thunderstorm
         }
         
-        // Check precipitation first
-        if precipitation > 0.5 {
+        // Check precipitation and snowfall
+        if snowfall > 0 {
+            return .snowy
+        } else if precipitation > 0.5 {
             return .rainy
         }
         
@@ -142,7 +127,7 @@ class WeatherService: ObservableObject {
     }
     
     func fetchWeather(for location: CLLocation) async {
-        let urlString = "https://api.open-meteo.com/v1/forecast?latitude=\(location.coordinate.latitude)&longitude=\(location.coordinate.longitude)&current=temperature_2m,relative_humidity_2m,wind_speed_10m,precipitation,thunderstorm_probability"
+        let urlString = "https://api.open-meteo.com/v1/forecast?latitude=\(location.coordinate.latitude)&longitude=\(location.coordinate.longitude)&current=temperature_2m,relative_humidity_2m,wind_speed_10m,precipitation,snowfall,thunderstorm_probability"
         
         guard let url = URL(string: urlString) else {
             self.error = .invalidURL
@@ -164,6 +149,7 @@ class WeatherService: ObservableObject {
             let humidity = weather.current.relative_humidity_2m
             let windSpeed = self.metersPerSecondToMilesPerHour(weather.current.wind_speed_10m)
             let precipitation = weather.current.precipitation
+            let snowfall = weather.current.snowfall
             let thunderstormProbability = weather.current.thunderstorm_probability
             
             self.currentTemperature = temperature
@@ -176,6 +162,7 @@ class WeatherService: ObservableObject {
                 humidity: humidity,
                 windSpeed: windSpeed,
                 precipitation: precipitation,
+                snowfall: snowfall,
                 thunderstormProbability: thunderstormProbability
             )
             self.error = nil

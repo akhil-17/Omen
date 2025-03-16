@@ -82,7 +82,7 @@ struct WeatherDetailsOverlay: View {
                 
                 // Attribution text
                 Text("Weather data by Open-Meteo.com")
-                    .font(.custom("Optima-Regular", size: 22))
+                    .font(.custom("Optima-Regular", size: 15))
                     .foregroundColor(Color(hex: "#d4d4d4").opacity(0.7))
                 
                 Spacer(minLength: 0)

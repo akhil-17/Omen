@@ -169,6 +169,18 @@ struct WeatherMessages {
             "Temperature drops past\nWhere thermometers can read\nPhysics starts to fail",
             "Frost giants awake\nStretching crystalline fingers\nToward mortal realms",
             "In this frozen waste\nAncient things preserved in ice\nSlowly start to stir"
+        ],
+        .snowy: [
+            "Soft snowflakes descend\nBlanketing the world in white\nWinter's gentle touch",
+            "Crystal flakes dancing\nTransforming the landscape now\nNature's pure delight",
+            "Silent snow falling\nEach flake a frozen star falls\nWhite peace surrounds us",
+            "Winter's gentle snow\nPainting branches pristine white\nNature's artistry",
+            "Snowflakes drift and swirl\nLike dancers in morning light\nWinter's sweet ballet",
+            "White veils from above\nShroud the world in mystery\nSecrets sleep below",
+            "Each snowflake contains\nFragments of forgotten dreams\nFrozen memories",
+            "Winter spirits dance\nWeaving patterns in the snow\nAncient runes take shape",
+            "Beneath crystal snow\nSomething ancient slumbers deep\nDreaming endless dreams",
+            "Time freezes in place\nAs snow blankets yesterday\nSealing what was lost"
         ]
     ]
     

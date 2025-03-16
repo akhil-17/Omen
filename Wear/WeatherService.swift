@@ -57,6 +57,41 @@ enum WeatherError: Error {
     case decodingError(Error)
     case locationError(Error)
     case unknown
+    
+    var message: String {
+        switch self {
+        case .invalidURL:
+            return """
+            Path leads to nowhere
+            Digital gates sealed shut tight
+            The way is broken
+            """
+        case .networkError:
+            return """
+            Silent connection
+            Whispers lost in digital
+            Mist, await return
+            """
+        case .decodingError:
+            return """
+            Numbers turn to ash
+            Data writhes, resists our grasp
+            Knowledge slips away
+            """
+        case .locationError:
+            return """
+            Coordinates lost
+            In void between here and there
+            The map bleeds shadows
+            """
+        case .unknown:
+            return """
+            Ancient error lurks
+            Beyond mortal comprehension
+            Darkness takes its toll
+            """
+        }
+    }
 }
 
 @MainActor

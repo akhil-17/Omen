@@ -26,12 +26,14 @@ struct WeatherDetailsOverlay: View {
                 .ignoresSafeArea()
             
             // Content
-            VStack(alignment: .leading, spacing: 24) {
+            VStack(alignment: .leading, spacing: 8) {
+                Spacer()
+                
                 // Location name with fixed height
                 Text(locationName)
-                    .font(.custom("Optima-Regular", size: 35))
-                    .foregroundColor(Color(hex: "#d4d4d4"))
-                    .frame(height: 42) // Increased height to match new font size
+                    .font(.custom("Optima-Regular", size: 22))
+                    .foregroundColor(Color(hex: "#d4d4d4").opacity(0.7))
+                    .frame(height: 28) // Increased height to match new font size
                     .opacity(locationName.isEmpty ? 0 : 1)
                 
                 Text("\(Int(temperature))°F")
@@ -77,6 +79,13 @@ struct WeatherDetailsOverlay: View {
                         )
                     }
                 }
+                
+                // Attribution text
+                Text("Weather data by Open-Meteo.com")
+                    .font(.custom("Optima-Regular", size: 22))
+                    .foregroundColor(Color(hex: "#d4d4d4").opacity(0.7))
+                
+                Spacer(minLength: 0)
             }
             .padding()
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
@@ -408,7 +417,6 @@ struct ContentView: View {
                             withAnimation(.easeIn(duration: 0.8)) {
                                 settingsButtonOpacity = 1
                             }
-                            // Start rotation animation after button appears
                             withAnimation(.linear(duration: 8).repeatForever(autoreverses: false)) {
                                 gearRotation = 360
                             }
@@ -418,12 +426,10 @@ struct ContentView: View {
                         .frame(maxHeight: .infinity)
                         .contentShape(Rectangle())
                         .onAppear {
-                            // Reset button opacity and rotation when error appears
                             settingsButtonOpacity = 0
                             gearRotation = 0
                         }
                         .onChange(of: locationError.message) { _, _ in
-                            // Reset button opacity and rotation when error message changes
                             settingsButtonOpacity = 0
                             gearRotation = 0
                         }
@@ -446,11 +452,46 @@ struct ContentView: View {
                         .opacity(settingsButtonOpacity)
                         .padding(.bottom)
                     } else if let error = weatherService.error {
-                        Text(error.localizedDescription)
-                            .font(.system(size: 16))
-                            .foregroundColor(Color(hex: "#d4d4d4"))
-                            .multilineTextAlignment(.center)
-                            .padding()
+                        AnimatedTextLines(text: error.message) {
+                            withAnimation(.easeIn(duration: 0.8)) {
+                                settingsButtonOpacity = 1
+                            }
+                            withAnimation(.linear(duration: 8).repeatForever(autoreverses: false)) {
+                                gearRotation = 360
+                            }
+                        }
+                        .multilineTextAlignment(.leading)
+                        .padding()
+                        .frame(maxHeight: .infinity)
+                        .contentShape(Rectangle())
+                        .onAppear {
+                            settingsButtonOpacity = 0
+                            gearRotation = 0
+                        }
+                        
+                        if case .networkError = error {
+                            Button {
+                                if let settingsUrl = URL(string: UIApplication.openSettingsURLString) {
+                                    Task {
+                                        await UIApplication.shared.open(settingsUrl)
+                                    }
+                                }
+                            } label: {
+                                Image(systemName: "gearshape.fill")
+                                    .font(.system(size: 36))
+                                    .foregroundColor(Color(hex: "#d4d4d4"))
+                                    .rotationEffect(.degrees(gearRotation))
+                                    .frame(width: 96, height: 96)
+                                    .background(Color(hex: "#191919"))
+                                    .clipShape(Circle())
+                                    .overlay(
+                                        Circle()
+                                            .stroke(Color(hex: "#d4d4d4").opacity(0.3), lineWidth: 1)
+                                    )
+                            }
+                            .opacity(settingsButtonOpacity)
+                            .padding(.bottom)
+                        }
                     } else if let temperature = weatherService.currentTemperature,
                               let condition = weatherService.weatherCondition,
                               let location = locationManager.location {

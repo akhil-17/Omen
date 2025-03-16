@@ -6,7 +6,20 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		07801C3D2D86B42C00A992A1 /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 07801C3C2D86B42C00A992A1 /* WidgetKit.framework */; };
+		07801C3F2D86B42C00A992A1 /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 07801C3E2D86B42C00A992A1 /* SwiftUI.framework */; };
+		07801C4E2D86B42E00A992A1 /* OmenWidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 07801C3A2D86B42C00A992A1 /* OmenWidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+/* End PBXBuildFile section */
+
 /* Begin PBXContainerItemProxy section */
+		07801C4C2D86B42E00A992A1 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 078A39372D7ECA96001315AC /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 07801C392D86B42C00A992A1;
+			remoteInfo = OmenWidgetExtension;
+		};
 		078A39512D7ECA98001315AC /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 078A39372D7ECA96001315AC /* Project object */;
@@ -23,14 +36,66 @@
 		};
 /* End PBXContainerItemProxy section */
 
+/* Begin PBXCopyFilesBuildPhase section */
+		07801C532D86B42E00A992A1 /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				07801C4E2D86B42E00A992A1 /* OmenWidgetExtension.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
 /* Begin PBXFileReference section */
-		078A393F2D7ECA96001315AC /* Wear.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; name = Wear.app; path = Omen.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		07801C3A2D86B42C00A992A1 /* OmenWidgetExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = OmenWidgetExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		07801C3C2D86B42C00A992A1 /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
+		07801C3E2D86B42C00A992A1 /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
+		07801C542D86B44900A992A1 /* OmenWidgetExtension.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = OmenWidgetExtension.entitlements; sourceTree = "<group>"; };
+		078A393F2D7ECA96001315AC /* Omen.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Omen.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		078A39502D7ECA98001315AC /* WearTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = WearTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		078A395A2D7ECA98001315AC /* WearUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = WearUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		07D28ACA2D7FD54C00FACC9E /* Wear.xctestplan */ = {isa = PBXFileReference; lastKnownFileType = text; path = Wear.xctestplan; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		07801C4F2D86B42E00A992A1 /* Exceptions for "OmenWidget" folder in "OmenWidgetExtension" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 07801C392D86B42C00A992A1 /* OmenWidgetExtension */;
+		};
+		07801C612D86B75200A992A1 /* Exceptions for "Shared" folder in "OmenWidgetExtension" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				ColorUtilities.swift,
+				WeatherData.swift,
+			);
+			target = 07801C392D86B42C00A992A1 /* OmenWidgetExtension */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
+		07801C402D86B42C00A992A1 /* OmenWidget */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				07801C4F2D86B42E00A992A1 /* Exceptions for "OmenWidget" folder in "OmenWidgetExtension" target */,
+			);
+			path = OmenWidget;
+			sourceTree = "<group>";
+		};
+		07801C5C2D86B75200A992A1 /* Shared */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				07801C612D86B75200A992A1 /* Exceptions for "Shared" folder in "OmenWidgetExtension" target */,
+			);
+			path = Shared;
+			sourceTree = "<group>";
+		};
 		078A39412D7ECA96001315AC /* Wear */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			path = Wear;
@@ -49,6 +114,15 @@
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
+		07801C372D86B42C00A992A1 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				07801C3F2D86B42C00A992A1 /* SwiftUI.framework in Frameworks */,
+				07801C3D2D86B42C00A992A1 /* WidgetKit.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		078A393C2D7ECA96001315AC /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -73,13 +147,26 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		07801C3B2D86B42C00A992A1 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				07801C3C2D86B42C00A992A1 /* WidgetKit.framework */,
+				07801C3E2D86B42C00A992A1 /* SwiftUI.framework */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
 		078A39362D7ECA96001315AC = {
 			isa = PBXGroup;
 			children = (
+				07801C542D86B44900A992A1 /* OmenWidgetExtension.entitlements */,
 				07D28ACA2D7FD54C00FACC9E /* Wear.xctestplan */,
+				07801C402D86B42C00A992A1 /* OmenWidget */,
+				07801C5C2D86B75200A992A1 /* Shared */,
 				078A39412D7ECA96001315AC /* Wear */,
 				078A39532D7ECA98001315AC /* WearTests */,
 				078A395D2D7ECA98001315AC /* WearUITests */,
+				07801C3B2D86B42C00A992A1 /* Frameworks */,
 				078A39402D7ECA96001315AC /* Products */,
 			);
 			sourceTree = "<group>";
@@ -87,9 +174,10 @@
 		078A39402D7ECA96001315AC /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				078A393F2D7ECA96001315AC /* Wear.app */,
+				078A393F2D7ECA96001315AC /* Omen.app */,
 				078A39502D7ECA98001315AC /* WearTests.xctest */,
 				078A395A2D7ECA98001315AC /* WearUITests.xctest */,
+				07801C3A2D86B42C00A992A1 /* OmenWidgetExtension.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -97,6 +185,28 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+		07801C392D86B42C00A992A1 /* OmenWidgetExtension */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 07801C502D86B42E00A992A1 /* Build configuration list for PBXNativeTarget "OmenWidgetExtension" */;
+			buildPhases = (
+				07801C362D86B42C00A992A1 /* Sources */,
+				07801C372D86B42C00A992A1 /* Frameworks */,
+				07801C382D86B42C00A992A1 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				07801C402D86B42C00A992A1 /* OmenWidget */,
+			);
+			name = OmenWidgetExtension;
+			packageProductDependencies = (
+			);
+			productName = OmenWidgetExtension;
+			productReference = 07801C3A2D86B42C00A992A1 /* OmenWidgetExtension.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
 		078A393E2D7ECA96001315AC /* Wear */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 078A39642D7ECA98001315AC /* Build configuration list for PBXNativeTarget "Wear" */;
@@ -104,19 +214,22 @@
 				078A393B2D7ECA96001315AC /* Sources */,
 				078A393C2D7ECA96001315AC /* Frameworks */,
 				078A393D2D7ECA96001315AC /* Resources */,
+				07801C532D86B42E00A992A1 /* Embed Foundation Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				07801C4D2D86B42E00A992A1 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
+				07801C5C2D86B75200A992A1 /* Shared */,
 				078A39412D7ECA96001315AC /* Wear */,
 			);
 			name = Wear;
 			packageProductDependencies = (
 			);
 			productName = Wear;
-			productReference = 078A393F2D7ECA96001315AC /* Wear.app */;
+			productReference = 078A393F2D7ECA96001315AC /* Omen.app */;
 			productType = "com.apple.product-type.application";
 		};
 		078A394F2D7ECA98001315AC /* WearTests */ = {
@@ -175,6 +288,9 @@
 				LastSwiftUpdateCheck = 1620;
 				LastUpgradeCheck = 1620;
 				TargetAttributes = {
+					07801C392D86B42C00A992A1 = {
+						CreatedOnToolsVersion = 16.2;
+					};
 					078A393E2D7ECA96001315AC = {
 						CreatedOnToolsVersion = 16.2;
 					};
@@ -205,11 +321,19 @@
 				078A393E2D7ECA96001315AC /* Wear */,
 				078A394F2D7ECA98001315AC /* WearTests */,
 				078A39592D7ECA98001315AC /* WearUITests */,
+				07801C392D86B42C00A992A1 /* OmenWidgetExtension */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
+		07801C382D86B42C00A992A1 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		078A393D2D7ECA96001315AC /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -234,6 +358,13 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
+		07801C362D86B42C00A992A1 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		078A393B2D7ECA96001315AC /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -258,6 +389,11 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
+		07801C4D2D86B42E00A992A1 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 07801C392D86B42C00A992A1 /* OmenWidgetExtension */;
+			targetProxy = 07801C4C2D86B42E00A992A1 /* PBXContainerItemProxy */;
+		};
 		078A39522D7ECA98001315AC /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = 078A393E2D7ECA96001315AC /* Wear */;
@@ -271,6 +407,67 @@
 /* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
+		07801C512D86B42E00A992A1 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_ENTITLEMENTS = OmenWidgetExtension.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = VJ6T7FHHKM;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = OmenWidget/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = OmenWidget;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 18.2;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.casualparrot.Omen.OmenWidget;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		07801C522D86B42E00A992A1 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_ENTITLEMENTS = OmenWidgetExtension.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = VJ6T7FHHKM;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = OmenWidget/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = OmenWidget;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 18.2;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.casualparrot.Omen.OmenWidget;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
 		078A39622D7ECA98001315AC /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -554,6 +751,15 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		07801C502D86B42E00A992A1 /* Build configuration list for PBXNativeTarget "OmenWidgetExtension" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				07801C512D86B42E00A992A1 /* Debug */,
+				07801C522D86B42E00A992A1 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 		078A393A2D7ECA96001315AC /* Build configuration list for PBXProject "Wear" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (

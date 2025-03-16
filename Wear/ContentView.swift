@@ -164,9 +164,6 @@ struct AnimatedTextLines: View {
     
     var body: some View {
         let lines = text.components(separatedBy: .newlines)
-        print("Number of lines: \(lines.count)")
-        print("Lines: \(lines)")
-        print("Line opacities: \(lineOpacities)")
         
         return VStack(alignment: .leading, spacing: 24) {
             ForEach(Array(lines.enumerated()), id: \.offset) { index, line in
@@ -174,26 +171,19 @@ struct AnimatedTextLines: View {
                     .font(.custom("Optima-Regular", size: 48))
                     .foregroundColor(Color(hex: "#d4d4d4"))
                     .opacity(lineOpacities[safe: index] ?? 0)
-                    .onAppear {
-                        print("Line \(index) appeared: \(line)")
-                        animateLine(at: index, in: lines)
-                    }
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .onChange(of: text) { oldValue, newValue in
-            print("Text changed from: \(oldValue) to: \(newValue)")
             startAnimation(for: newValue)
         }
         .onAppear {
-            print("AnimatedTextLines appeared with text: \(text)")
             startAnimation(for: text)
         }
     }
     
     private func startAnimation(for text: String) {
         let lines = text.components(separatedBy: .newlines)
-        print("Starting animation with \(lines.count) lines")
         lineOpacities = Array(repeating: 0, count: lines.count)
         
         // Add initial delay of 1 second before starting animations
@@ -203,7 +193,6 @@ struct AnimatedTextLines: View {
                 DispatchQueue.main.asyncAfter(deadline: .now() + Double(index) * 2.3) {
                     withAnimation(.easeIn(duration: 0.8)) {
                         if index < lineOpacities.count {
-                            print("Animating line \(index)")
                             lineOpacities[index] = 1
                         }
                     }
@@ -214,18 +203,6 @@ struct AnimatedTextLines: View {
                             onAnimationComplete?()
                         }
                     }
-                }
-            }
-        }
-    }
-    
-    private func animateLine(at index: Int, in lines: [String]) {
-        print("Preparing to animate line \(index)")
-        DispatchQueue.main.asyncAfter(deadline: .now() + Double(index) * 2.3) {
-            withAnimation(.easeIn(duration: 0.8)) {
-                if index < lineOpacities.count {
-                    print("Setting opacity for line \(index) to 1")
-                    lineOpacities[index] = 1
                 }
             }
         }
@@ -389,6 +366,7 @@ struct ContentView: View {
     @State private var settingsButtonOpacity: Double = 0
     @State private var gearRotation: Double = 0
     @State private var showSplash = true
+    private let sharedData = SharedWeatherData.shared
     
     // Add haptic feedback generator
     let impactGenerator = UIImpactFeedbackGenerator(style: .medium)
@@ -428,10 +406,12 @@ struct ContentView: View {
                         .onAppear {
                             settingsButtonOpacity = 0
                             gearRotation = 0
+                            sharedData.currentHaiku = locationError.message
                         }
-                        .onChange(of: locationError.message) { _, _ in
+                        .onChange(of: locationError.message) { _, newValue in
                             settingsButtonOpacity = 0
                             gearRotation = 0
+                            sharedData.currentHaiku = newValue
                         }
                         
                         Button {
@@ -467,6 +447,7 @@ struct ContentView: View {
                         .onAppear {
                             settingsButtonOpacity = 0
                             gearRotation = 0
+                            sharedData.currentHaiku = error.message
                         }
                         
                         if case .networkError = error {
@@ -492,9 +473,9 @@ struct ContentView: View {
                             .opacity(settingsButtonOpacity)
                             .padding(.bottom)
                         }
-                    } else if let temperature = weatherService.currentTemperature,
-                              let condition = weatherService.weatherCondition,
-                              let location = locationManager.location {
+                    } else if let _ = weatherService.currentTemperature,
+                              let _ = weatherService.weatherCondition,
+                              let _ = locationManager.location {
                         VStack(spacing: 48) {
                             AnimatedTextLines(text: currentWeatherMessage)
                                 .multilineTextAlignment(.leading)
@@ -565,6 +546,7 @@ struct ContentView: View {
                 print("Weather condition changed to: \(condition.rawValue)")
                 messageOpacity = 0 // Reset opacity
                 currentWeatherMessage = WeatherMessages.randomMessage(for: condition)
+                sharedData.currentHaiku = currentWeatherMessage
                 print("New message: \(currentWeatherMessage)")
                 withAnimation(.easeIn(duration: 0.5)) {
                     messageOpacity = 1 // Fade in the new message
@@ -587,33 +569,6 @@ struct WeatherDataView: View {
                 .font(.custom("Optima-Regular", size: 15))
                 .foregroundColor(Color(hex: "#d4d4d4").opacity(0.7))
         }
-    }
-}
-
-// Extension to create Color from hex string
-extension Color {
-    init(hex: String) {
-        let hex = hex.trimmingCharacters(in: CharacterSet.alphanumerics.inverted)
-        var int: UInt64 = 0
-        Scanner(string: hex).scanHexInt64(&int)
-        let a, r, g, b: UInt64
-        switch hex.count {
-        case 3: // RGB (12-bit)
-            (a, r, g, b) = (255, (int >> 8) * 17, (int >> 4 & 0xF) * 17, (int & 0xF) * 17)
-        case 6: // RGB (24-bit)
-            (a, r, g, b) = (255, int >> 16, int >> 8 & 0xFF, int & 0xFF)
-        case 8: // ARGB (32-bit)
-            (a, r, g, b) = (int >> 24, int >> 16 & 0xFF, int >> 8 & 0xFF, int & 0xFF)
-        default:
-            (a, r, g, b) = (255, 0, 0, 0)
-        }
-        self.init(
-            .sRGB,
-            red: Double(r) / 255,
-            green: Double(g) / 255,
-            blue: Double(b) / 255,
-            opacity: Double(a) / 255
-        )
     }
 }
 

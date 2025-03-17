@@ -20,18 +20,26 @@ enum WeatherCondition: String {
     case sunny = "Sunny"
     case partlyCloudy = "Partly Cloudy"
     case cloudy = "Cloudy"
-    case rainy = "Rainy"
+    case drizzle = "Drizzle"      // Light rain (0.1-2.5 mm)
+    case rainy = "Rainy"          // Moderate rain (2.5-7.6 mm)
+    case downpour = "Downpour"    // Heavy rain (>7.6 mm)
     case snowy = "Snowy"
     case thunderstorm = "Thunderstorm"
     case stormy = "Stormy"
+    case windy = "Windy"
     case foggy = "Foggy"
-    case veryHot = "Very Hot"
-    case hot = "Hot"
-    case warm = "Warm"
-    case mild = "Mild"
-    case cool = "Cool"
-    case cold = "Cold"
-    case veryCold = "Very Cold"
+    case hellscape = "Hellscape"          // ≥100°F
+    case inferno = "Inferno"             // 90-100°F
+    case sweltering = "Sweltering"       // 80-90°F
+    case sultry = "Sultry"               // 70-80°F
+    case balmy = "Balmy"                 // 60-70°F
+    case temperate = "Temperate"         // 50-60°F
+    case brisk = "Brisk"                 // 40-50°F
+    case chilly = "Chilly"               // 30-40°F
+    case frosty = "Frosty"               // 20-30°F
+    case frigid = "Frigid"               // 10-20°F
+    case glacial = "Glacial"             // 0-10°F
+    case polar = "Polar"                 // <0°F
 }
 
 enum WeatherError: Error {
@@ -104,25 +112,58 @@ class WeatherService: ObservableObject {
         // Check precipitation and snowfall
         if snowfall > 0 {
             return .snowy
-        } else if precipitation > 0.5 {
+        } else if precipitation > 7.6 {
+            return .downpour
+        } else if precipitation > 2.5 {
             return .rainy
+        } else if precipitation > 0.1 {
+            return .drizzle
+        }
+
+        // Check for stormy and windy conditions
+        if windSpeed > 40 {  // Over 40 mph is considered stormy
+            return .stormy
+        } else if windSpeed > 20 {  // Over 20 mph is considered windy
+            return .windy
+        }
+
+        // Check for foggy conditions (very high humidity and low wind)
+        if humidity > 90 && windSpeed < 5 {
+            return .foggy
+        }
+
+        // Check for cloudy conditions based on humidity
+        if humidity > 80 {
+            return .cloudy
+        } else if humidity > 65 {
+            return .partlyCloudy
         }
         
         // Temperature-based conditions
-        if temperature >= 85 {
-            return .veryHot
+        if temperature >= 100 {
+            return .hellscape
+        } else if temperature >= 90 {
+            return .inferno
+        } else if temperature >= 80 {
+            return .sweltering
         } else if temperature >= 70 {
-            return .hot
+            return .sultry
         } else if temperature >= 60 {
-            return .warm
+            return .balmy
         } else if temperature >= 50 {
-            return .mild
+            return .temperate
         } else if temperature >= 40 {
-            return .cool
+            return .brisk
         } else if temperature >= 30 {
-            return .cold
+            return .chilly
+        } else if temperature >= 20 {
+            return .frosty
+        } else if temperature >= 10 {
+            return .frigid
+        } else if temperature >= 0 {
+            return .glacial
         } else {
-            return .veryCold
+            return .polar
         }
     }
     

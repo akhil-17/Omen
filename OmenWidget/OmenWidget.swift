@@ -53,15 +53,15 @@ struct Provider: TimelineProvider {
         var entries: [SimpleEntry] = []
         let currentDate = Date()
         
-        // Create entries every 5 minutes for the next 30 minutes
-        for minuteOffset in stride(from: 0, to: 30, by: 5) {
-            let entryDate = Calendar.current.date(byAdding: .minute, value: minuteOffset, to: currentDate)!
+        // Create entries every 60 seconds for the next 5 minutes
+        for secondOffset in stride(from: 0, to: 300, by: 60) {
+            let entryDate = Calendar.current.date(byAdding: .second, value: secondOffset, to: currentDate)!
             let entry = SimpleEntry(date: entryDate, haiku: sharedData.currentHaiku, lastUpdated: sharedData.lastUpdated)
             entries.append(entry)
         }
 
-        // Refresh more frequently to catch updates
-        let timeline = Timeline(entries: entries, policy: .after(Calendar.current.date(byAdding: .minute, value: 5, to: currentDate)!))
+        // Refresh every 60 seconds
+        let timeline = Timeline(entries: entries, policy: .after(Calendar.current.date(byAdding: .second, value: 60, to: currentDate)!))
         completion(timeline)
     }
 
@@ -78,6 +78,7 @@ struct SimpleEntry: TimelineEntry {
 
 struct OmenWidgetEntryView : View {
     var entry: Provider.Entry
+    @Environment(\.widgetFamily) var widgetFamily
     
     var body: some View {
         Text(entry.haiku)
@@ -88,6 +89,9 @@ struct OmenWidgetEntryView : View {
             .padding(.vertical, 12)
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
             .minimumScaleFactor(0.8)
+            .background {
+                NoiseBackground()
+            }
     }
 }
 

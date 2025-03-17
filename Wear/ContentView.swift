@@ -186,12 +186,12 @@ struct AnimatedTextLines: View {
         let lines = text.components(separatedBy: .newlines)
         lineOpacities = Array(repeating: 0, count: lines.count)
         
-        // Add initial delay of 1 second before starting animations
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+        // Add initial delay of 0.5 second before starting animations
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
             // Animate each line with a delay
             for (index, _) in lines.enumerated() {
-                DispatchQueue.main.asyncAfter(deadline: .now() + Double(index) * 2.3) {
-                    withAnimation(.easeIn(duration: 0.8)) {
+                DispatchQueue.main.asyncAfter(deadline: .now() + Double(index) * 0.5) { // Reduced from 0.8 to 0.5
+                    withAnimation(.easeIn(duration: 0.8)) { // Keep original animation duration
                         if index < lineOpacities.count {
                             lineOpacities[index] = 1
                         }
@@ -357,6 +357,36 @@ struct SplashScreen: View {
     }
 }
 
+struct HaikuTransitionView: View {
+    let onComplete: () -> Void
+    @State private var opacity: Double = 0
+    @State private var scale: CGFloat = 0.8
+    
+    var body: some View {
+        OmenIcon()
+            .frame(width: 200, height: 200)
+            .opacity(opacity)
+            .scaleEffect(scale)
+            .onAppear {
+                withAnimation(.easeOut(duration: 0.4)) {
+                    opacity = 1
+                    scale = 1.0
+                }
+                
+                // Trigger completion after animation
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
+                    withAnimation(.easeIn(duration: 0.3)) {
+                        opacity = 0
+                        scale = 0.8
+                    }
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                        onComplete()
+                    }
+                }
+            }
+    }
+}
+
 struct ContentView: View {
     @StateObject private var weatherService = WeatherService()
     @StateObject private var locationManager = LocationManager()
@@ -366,10 +396,54 @@ struct ContentView: View {
     @State private var settingsButtonOpacity: Double = 0
     @State private var gearRotation: Double = 0
     @State private var showSplash = true
+    @State private var isTransitioning = false
     private let sharedData = SharedWeatherData.shared
+    private let weatherRefreshTimer = Timer.publish(every: 60, on: .main, in: .common).autoconnect()
     
     // Add haptic feedback generator
     let impactGenerator = UIImpactFeedbackGenerator(style: .medium)
+    
+    // Preview initializer
+    init(previewWeatherService: WeatherService? = nil, previewLocationManager: LocationManager? = nil, initialMessage: String? = nil) {
+        if let service = previewWeatherService {
+            _weatherService = StateObject(wrappedValue: service)
+        }
+        if let manager = previewLocationManager {
+            _locationManager = StateObject(wrappedValue: manager)
+        }
+        if let message = initialMessage {
+            _currentWeatherMessage = State(initialValue: message)
+            _messageOpacity = State(initialValue: 1)
+            _showSplash = State(initialValue: false)
+        }
+    }
+    
+    private func refreshWeatherData() {
+        if let location = locationManager.location {
+            Task {
+                await weatherService.fetchWeather(for: location)
+            }
+        }
+    }
+    
+    private func updateHaikuMessage() {
+        if weatherService.weatherCondition != nil {
+            isTransitioning = true
+            messageOpacity = 0
+        }
+    }
+    
+    private func completeHaikuTransition() {
+        if let condition = weatherService.weatherCondition {
+            currentWeatherMessage = WeatherMessages.randomMessage(for: condition)
+            sharedData.currentHaiku = currentWeatherMessage
+            print("New message: \(currentWeatherMessage)")
+            isTransitioning = false
+            withAnimation(.easeIn(duration: 0.5)) {
+                messageOpacity = 1
+            }
+        }
+    }
     
     var body: some View {
         ZStack {
@@ -476,19 +550,27 @@ struct ContentView: View {
                     } else if let _ = weatherService.currentTemperature,
                               let _ = weatherService.weatherCondition,
                               let _ = locationManager.location {
-                        VStack(spacing: 48) {
-                            AnimatedTextLines(text: currentWeatherMessage)
-                                .multilineTextAlignment(.leading)
-                                .padding()
-                                .frame(maxHeight: .infinity)
-                                .contentShape(Rectangle())
-                                .opacity(messageOpacity)
-                                .animation(
-                                    isShowingDetails ? 
-                                        .easeOut(duration: 0.3) : // Fade out
-                                        .easeIn(duration: 0.2),   // Faster fade in
-                                    value: messageOpacity
-                                )
+                        ZStack {
+                            VStack(spacing: 48) {
+                                AnimatedTextLines(text: currentWeatherMessage)
+                                    .multilineTextAlignment(.leading)
+                                    .padding()
+                                    .frame(maxHeight: .infinity)
+                                    .contentShape(Rectangle())
+                                    .opacity(messageOpacity)
+                                    .animation(
+                                        isShowingDetails ? 
+                                            .easeOut(duration: 0.3) : // Fade out
+                                            .easeIn(duration: 0.2),   // Faster fade in
+                                        value: messageOpacity
+                                    )
+                            }
+                            
+                            if isTransitioning {
+                                HaikuTransitionView {
+                                    completeHaikuTransition()
+                                }
+                            }
                         }
                         .onLongPressGesture(minimumDuration: 1.0, maximumDistance: .infinity, pressing: { isPressing in
                             withAnimation(
@@ -544,14 +626,12 @@ struct ContentView: View {
         .onChange(of: weatherService.weatherCondition) { oldValue, newValue in
             if let condition = newValue {
                 print("Weather condition changed to: \(condition.rawValue)")
-                messageOpacity = 0 // Reset opacity
-                currentWeatherMessage = WeatherMessages.randomMessage(for: condition)
-                sharedData.currentHaiku = currentWeatherMessage
-                print("New message: \(currentWeatherMessage)")
-                withAnimation(.easeIn(duration: 0.5)) {
-                    messageOpacity = 1 // Fade in the new message
-                }
+                updateHaikuMessage()
             }
+        }
+        .onReceive(weatherRefreshTimer) { _ in
+            refreshWeatherData()
+            updateHaikuMessage()
         }
     }
 }
@@ -574,4 +654,437 @@ struct WeatherDataView: View {
 
 #Preview {
     ContentView()
+}
+
+// Preview helpers
+class PreviewWeatherService: WeatherService {
+    override init() {
+        super.init()
+        self.currentTemperature = 75.0
+        self.humidity = 85
+        self.windSpeed = 15.5
+        self.precipitation = 25.0
+        self.thunderstormProbability = 75
+    }
+    
+    override func fetchWeather(for location: CLLocation) async {
+        return
+    }
+}
+
+class PreviewLocationManager: LocationManager {
+    override init() {
+        super.init()
+        self.location = CLLocation(latitude: 37.7749, longitude: -122.4194)
+        self.permissionStatus = .authorizedWhenInUse
+    }
+    
+    override func requestLocation() {
+        return
+    }
+}
+
+// Split previews into categories
+struct PrecipitationPreviews: PreviewProvider {
+    static var previews: some View {
+        Group {
+            // Thunderstorm
+            ContentView(
+                previewWeatherService: {
+                    let service = PreviewWeatherService()
+                    service.currentTemperature = 72.0
+                    service.humidity = 85
+                    service.windSpeed = 25.0
+                    service.precipitation = 35.0
+                    service.thunderstormProbability = 40
+                    service.weatherCondition = .thunderstorm
+                    return service
+                }(),
+                previewLocationManager: PreviewLocationManager(),
+                initialMessage: WeatherMessages.randomMessage(for: .thunderstorm)
+            )
+            .previewDisplayName("Thunderstorm")
+            
+            // Snowy
+            ContentView(
+                previewWeatherService: {
+                    let service = PreviewWeatherService()
+                    service.currentTemperature = 28.0
+                    service.humidity = 85
+                    service.windSpeed = 12.0
+                    service.precipitation = 15.0
+                    service.thunderstormProbability = 0
+                    service.weatherCondition = .snowy
+                    return service
+                }(),
+                previewLocationManager: PreviewLocationManager(),
+                initialMessage: WeatherMessages.randomMessage(for: .snowy)
+            )
+            .previewDisplayName("Snowy")
+            
+            // Downpour
+            ContentView(
+                previewWeatherService: {
+                    let service = PreviewWeatherService()
+                    service.currentTemperature = 60.0
+                    service.humidity = 95
+                    service.windSpeed = 15.0
+                    service.precipitation = 8.0
+                    service.thunderstormProbability = 0
+                    service.weatherCondition = .downpour
+                    return service
+                }(),
+                previewLocationManager: PreviewLocationManager(),
+                initialMessage: WeatherMessages.randomMessage(for: .downpour)
+            )
+            .previewDisplayName("Downpour")
+            
+            // Rainy
+            ContentView(
+                previewWeatherService: {
+                    let service = PreviewWeatherService()
+                    service.currentTemperature = 62.0
+                    service.humidity = 90
+                    service.windSpeed = 12.0
+                    service.precipitation = 5.0
+                    service.thunderstormProbability = 0
+                    service.weatherCondition = .rainy
+                    return service
+                }(),
+                previewLocationManager: PreviewLocationManager(),
+                initialMessage: WeatherMessages.randomMessage(for: .rainy)
+            )
+            .previewDisplayName("Rainy")
+            
+            // Drizzle
+            ContentView(
+                previewWeatherService: {
+                    let service = PreviewWeatherService()
+                    service.currentTemperature = 65.0
+                    service.humidity = 85
+                    service.windSpeed = 7.0
+                    service.precipitation = 1.0
+                    service.thunderstormProbability = 0
+                    service.weatherCondition = .drizzle
+                    return service
+                }(),
+                previewLocationManager: PreviewLocationManager(),
+                initialMessage: WeatherMessages.randomMessage(for: .drizzle)
+            )
+            .previewDisplayName("Drizzle")
+        }
+    }
+}
+
+struct WindAndCloudPreviews: PreviewProvider {
+    static var previews: some View {
+        Group {
+            // Stormy
+            ContentView(
+                previewWeatherService: {
+                    let service = PreviewWeatherService()
+                    service.currentTemperature = 68.0
+                    service.humidity = 80
+                    service.windSpeed = 45.0
+                    service.precipitation = 0
+                    service.thunderstormProbability = 0
+                    service.weatherCondition = .stormy
+                    return service
+                }(),
+                previewLocationManager: PreviewLocationManager(),
+                initialMessage: WeatherMessages.randomMessage(for: .stormy)
+            )
+            .previewDisplayName("Stormy")
+            
+            // Windy
+            ContentView(
+                previewWeatherService: {
+                    let service = PreviewWeatherService()
+                    service.currentTemperature = 65.0
+                    service.humidity = 50
+                    service.windSpeed = 25.0
+                    service.precipitation = 0
+                    service.thunderstormProbability = 0
+                    service.weatherCondition = .windy
+                    return service
+                }(),
+                previewLocationManager: PreviewLocationManager(),
+                initialMessage: WeatherMessages.randomMessage(for: .windy)
+            )
+            .previewDisplayName("Windy")
+            
+            // Foggy
+            ContentView(
+                previewWeatherService: {
+                    let service = PreviewWeatherService()
+                    service.currentTemperature = 55.0
+                    service.humidity = 95
+                    service.windSpeed = 3.0
+                    service.precipitation = 0
+                    service.thunderstormProbability = 0
+                    service.weatherCondition = .foggy
+                    return service
+                }(),
+                previewLocationManager: PreviewLocationManager(),
+                initialMessage: WeatherMessages.randomMessage(for: .foggy)
+            )
+            .previewDisplayName("Foggy")
+            
+            // Cloudy
+            ContentView(
+                previewWeatherService: {
+                    let service = PreviewWeatherService()
+                    service.currentTemperature = 70.0
+                    service.humidity = 85
+                    service.windSpeed = 10.0
+                    service.precipitation = 0
+                    service.thunderstormProbability = 0
+                    service.weatherCondition = .cloudy
+                    return service
+                }(),
+                previewLocationManager: PreviewLocationManager(),
+                initialMessage: WeatherMessages.randomMessage(for: .cloudy)
+            )
+            .previewDisplayName("Cloudy")
+            
+            // Partly Cloudy
+            ContentView(
+                previewWeatherService: {
+                    let service = PreviewWeatherService()
+                    service.currentTemperature = 75.0
+                    service.humidity = 70
+                    service.windSpeed = 8.0
+                    service.precipitation = 0
+                    service.thunderstormProbability = 0
+                    service.weatherCondition = .partlyCloudy
+                    return service
+                }(),
+                previewLocationManager: PreviewLocationManager(),
+                initialMessage: WeatherMessages.randomMessage(for: .partlyCloudy)
+            )
+            .previewDisplayName("Partly Cloudy")
+        }
+    }
+}
+
+struct HotWeatherPreviews: PreviewProvider {
+    static var previews: some View {
+        Group {
+            // Hellscape
+            ContentView(
+                previewWeatherService: {
+                    let service = PreviewWeatherService()
+                    service.currentTemperature = 102.0
+                    service.humidity = 30
+                    service.windSpeed = 5.0
+                    service.precipitation = 0
+                    service.thunderstormProbability = 0
+                    service.weatherCondition = .hellscape
+                    return service
+                }(),
+                previewLocationManager: PreviewLocationManager(),
+                initialMessage: WeatherMessages.randomMessage(for: .hellscape)
+            )
+            .previewDisplayName("Hellscape")
+            
+            // Inferno
+            ContentView(
+                previewWeatherService: {
+                    let service = PreviewWeatherService()
+                    service.currentTemperature = 95.0
+                    service.humidity = 35
+                    service.windSpeed = 5.0
+                    service.precipitation = 0
+                    service.thunderstormProbability = 0
+                    service.weatherCondition = .inferno
+                    return service
+                }(),
+                previewLocationManager: PreviewLocationManager(),
+                initialMessage: WeatherMessages.randomMessage(for: .inferno)
+            )
+            .previewDisplayName("Inferno")
+            
+            // Sweltering
+            ContentView(
+                previewWeatherService: {
+                    let service = PreviewWeatherService()
+                    service.currentTemperature = 85.0
+                    service.humidity = 40
+                    service.windSpeed = 5.0
+                    service.precipitation = 0
+                    service.thunderstormProbability = 0
+                    service.weatherCondition = .sweltering
+                    return service
+                }(),
+                previewLocationManager: PreviewLocationManager(),
+                initialMessage: WeatherMessages.randomMessage(for: .sweltering)
+            )
+            .previewDisplayName("Sweltering")
+            
+            // Sultry
+            ContentView(
+                previewWeatherService: {
+                    let service = PreviewWeatherService()
+                    service.currentTemperature = 75.0
+                    service.humidity = 45
+                    service.windSpeed = 5.0
+                    service.precipitation = 0
+                    service.thunderstormProbability = 0
+                    service.weatherCondition = .sultry
+                    return service
+                }(),
+                previewLocationManager: PreviewLocationManager(),
+                initialMessage: WeatherMessages.randomMessage(for: .sultry)
+            )
+            .previewDisplayName("Sultry")
+            
+            // Balmy
+            ContentView(
+                previewWeatherService: {
+                    let service = PreviewWeatherService()
+                    service.currentTemperature = 65.0
+                    service.humidity = 50
+                    service.windSpeed = 5.0
+                    service.precipitation = 0
+                    service.thunderstormProbability = 0
+                    service.weatherCondition = .balmy
+                    return service
+                }(),
+                previewLocationManager: PreviewLocationManager(),
+                initialMessage: WeatherMessages.randomMessage(for: .balmy)
+            )
+            .previewDisplayName("Balmy")
+        }
+    }
+}
+
+struct MildWeatherPreviews: PreviewProvider {
+    static var previews: some View {
+        Group {
+            // Temperate
+            ContentView(
+                previewWeatherService: {
+                    let service = PreviewWeatherService()
+                    service.currentTemperature = 55.0
+                    service.humidity = 55
+                    service.windSpeed = 5.0
+                    service.precipitation = 0
+                    service.thunderstormProbability = 0
+                    service.weatherCondition = .temperate
+                    return service
+                }(),
+                previewLocationManager: PreviewLocationManager(),
+                initialMessage: WeatherMessages.randomMessage(for: .temperate)
+            )
+            .previewDisplayName("Temperate")
+            
+            // Brisk
+            ContentView(
+                previewWeatherService: {
+                    let service = PreviewWeatherService()
+                    service.currentTemperature = 45.0
+                    service.humidity = 60
+                    service.windSpeed = 5.0
+                    service.precipitation = 0
+                    service.thunderstormProbability = 0
+                    service.weatherCondition = .brisk
+                    return service
+                }(),
+                previewLocationManager: PreviewLocationManager(),
+                initialMessage: WeatherMessages.randomMessage(for: .brisk)
+            )
+            .previewDisplayName("Brisk")
+            
+            // Chilly
+            ContentView(
+                previewWeatherService: {
+                    let service = PreviewWeatherService()
+                    service.currentTemperature = 35.0
+                    service.humidity = 65
+                    service.windSpeed = 5.0
+                    service.precipitation = 0
+                    service.thunderstormProbability = 0
+                    service.weatherCondition = .chilly
+                    return service
+                }(),
+                previewLocationManager: PreviewLocationManager(),
+                initialMessage: WeatherMessages.randomMessage(for: .chilly)
+            )
+            .previewDisplayName("Chilly")
+        }
+    }
+}
+
+struct ColdWeatherPreviews: PreviewProvider {
+    static var previews: some View {
+        Group {
+            // Frosty
+            ContentView(
+                previewWeatherService: {
+                    let service = PreviewWeatherService()
+                    service.currentTemperature = 25.0
+                    service.humidity = 70
+                    service.windSpeed = 5.0
+                    service.precipitation = 0
+                    service.thunderstormProbability = 0
+                    service.weatherCondition = .frosty
+                    return service
+                }(),
+                previewLocationManager: PreviewLocationManager(),
+                initialMessage: WeatherMessages.randomMessage(for: .frosty)
+            )
+            .previewDisplayName("Frosty")
+            
+            // Frigid
+            ContentView(
+                previewWeatherService: {
+                    let service = PreviewWeatherService()
+                    service.currentTemperature = 15.0
+                    service.humidity = 75
+                    service.windSpeed = 5.0
+                    service.precipitation = 0
+                    service.thunderstormProbability = 0
+                    service.weatherCondition = .frigid
+                    return service
+                }(),
+                previewLocationManager: PreviewLocationManager(),
+                initialMessage: WeatherMessages.randomMessage(for: .frigid)
+            )
+            .previewDisplayName("Frigid")
+            
+            // Glacial
+            ContentView(
+                previewWeatherService: {
+                    let service = PreviewWeatherService()
+                    service.currentTemperature = 5.0
+                    service.humidity = 80
+                    service.windSpeed = 5.0
+                    service.precipitation = 0
+                    service.thunderstormProbability = 0
+                    service.weatherCondition = .glacial
+                    return service
+                }(),
+                previewLocationManager: PreviewLocationManager(),
+                initialMessage: WeatherMessages.randomMessage(for: .glacial)
+            )
+            .previewDisplayName("Glacial")
+            
+            // Polar
+            ContentView(
+                previewWeatherService: {
+                    let service = PreviewWeatherService()
+                    service.currentTemperature = -5.0
+                    service.humidity = 85
+                    service.windSpeed = 5.0
+                    service.precipitation = 0
+                    service.thunderstormProbability = 0
+                    service.weatherCondition = .polar
+                    return service
+                }(),
+                previewLocationManager: PreviewLocationManager(),
+                initialMessage: WeatherMessages.randomMessage(for: .polar)
+            )
+            .previewDisplayName("Polar")
+        }
+    }
 }
